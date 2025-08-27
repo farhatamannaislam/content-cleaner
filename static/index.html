@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <title>Content Cleaner</title>
+  <style>
+    body { max-width: 800px; margin: 2rem auto; font-family: sans-serif; }
+    textarea { width: 100%; min-height: 140px; margin-bottom: 1rem; }
+    input, button { padding: 0.5rem; margin: 0.25rem 0; }
+  </style>
+</head>
+<body>
+  <h1>Content Cleaner</h1>
+
+  <label for="token">API Token:</label><br>
+  <input id="token" placeholder="supersecrettoken"><br><br>
+
+  <label for="input">Roh-Text</label><br>
+  <textarea id="input" placeholder="Hier einfügen..."></textarea><br>
+
+  <label for="output">Bereinigt</label><br>
+  <textarea id="output" readonly></textarea><br>
+
+  <button id="btn">Bereinigen</button>
+
+  <div id="msg"></div>
+</body>
+</html>
