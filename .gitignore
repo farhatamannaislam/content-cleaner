@@ -1,4 +1,13 @@
-__pycache__/
-*.pyc
-venv/
-.env
+# Node / TypeScript (frontend GUI)
+node_modules/
+static/dist/
+*.tsbuildinfo
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editor stuff
+.vscode/
+.DS_Store

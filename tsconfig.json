@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "es2017",
+    "lib": ["dom", "es2017"],
+    "module": "es2020",
+    "moduleResolution": "node",
+
+    "outDir": "static/dist",
+
+    // 🚫 Turn off extra outputs
+    "sourceMap": false,
+    "declaration": false,
+    "declarationMap": false,
+
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true
+  },
+  "include": ["static/index.ts"]
+}
+
