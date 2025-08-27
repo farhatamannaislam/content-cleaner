@@ -1,82 +1,104 @@
 <!DOCTYPE html>
 <html lang="de">
-
 <head>
-    <meta charset="utf-8" />
-    <title>Content Cleaner</title>
-    <style>
-        body {
-            max-width: 800px;
-            margin: 2rem auto;
-            font-family: sans-serif;
-        }
-
-        textarea {
-            width: 100%;
-            min-height: 140px;
-            margin-bottom: 1rem;
-        }
-
-        input,
-        button {
-            padding: 0.5rem;
-            margin: 0.25rem 0;
-        }
-    </style>
+  <meta charset="utf-8" />
+  <title>Content Cleaner</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      max-width: 840px;
+      margin: 24px auto;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      padding: 0 12px;
+    }
+    h1 { margin-bottom: 16px; }
+    label { font-weight: 600; display: block; margin: 12px 0 6px; }
+    input, button { padding: 10px; }
+    textarea { width: 100%; min-height: 160px; }
+    .grid { display: grid; gap: 16px; grid-template-columns: 1fr; }
+    @media (min-width: 900px) { .grid { grid-template-columns: 1fr 1fr; } }
+    .muted { color: #666; }
+    .error { color: #b00020; }
+    .ok { color: #0a7a28; }
+  </style>
 </head>
-
 <body>
-    <h1>Content Cleaner</h1>
+  <h1>Content Cleaner</h1>
 
-    <label for="token">API Token:</label><br>
-    <input id="token" placeholder="supersecrettoken"><br><br>
+  <label for="token">API Token</label>
+  <input id="token" placeholder="supersecrettoken" />
 
-    <label for="input">Roh-Text</label><br>
-    <textarea id="input" placeholder="Hier einfügen..."></textarea><br>
+  <div class="grid">
+    <div>
+      <label for="input">Roh-Text</label>
+      <textarea id="input" placeholder="Hier einfügen..."></textarea>
+    </div>
+    <div>
+      <label for="output">Bereinigt</label>
+      <textarea id="output" readonly placeholder="Ergebnis erscheint hier..."></textarea>
+    </div>
+  </div>
 
-    <label for="output">Bereinigt</label><br>
-    <textarea id="output" readonly></textarea><br>
-
+  <div style="margin-top:12px;">
     <button id="btn">Bereinigen</button>
+    <span id="msg" class="muted" style="margin-left:8px;"></span>
+  </div>
 
-    <div id="msg"></div>
-    <script>
-        document.getElementById("btn").addEventListener("click", async () => {
-            const token = document.getElementById("token").value.trim();
-            const text = document.getElementById("input").value;
-            const msg = document.getElementById("msg");
+  <script>
+    const tokenEl = document.getElementById("token");
+    const inputEl = document.getElementById("input");
+    const outputEl = document.getElementById("output");
+    const msgEl = document.getElementById("msg");
+    const btn = document.getElementById("btn");
 
-            if (!token) {
-                msg.textContent = "Bitte Token eingeben.";
-                msg.style.color = "red";
-                return;
-            }
+    // Optional: remember token locally for convenience
+    try {
+      const saved = localStorage.getItem("cc_token");
+      if (saved) tokenEl.value = saved;
+      tokenEl.addEventListener("input", () => {
+        localStorage.setItem("cc_token", tokenEl.value);
+      });
+    } catch (_) {}
 
-            try {
-                const resp = await fetch("http://127.0.0.1:8000/clean", {
-                    method: "POST",
-                    headers: {
-                        "Authorization": "Bearer " + token,
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({ text })
-                });
-                const data = await resp.json();
-                if (!resp.ok) {
-                    msg.textContent = `${resp.status}: ${data.detail || "Fehler"}`;
-                    msg.style.color = "red";
-                    return;
-                }
-                document.getElementById("output").value = data.clean;
-                msg.textContent = "Bereinigung erfolgreich.";
-                msg.style.color = "green";
-            } catch (e) {
-                msg.textContent = "Netzwerkfehler: " + e.message;
-                msg.style.color = "red";
-            }
+    btn.addEventListener("click", async () => {
+      msgEl.textContent = "";
+      msgEl.className = "muted";
+
+      const token = tokenEl.value.trim();
+      const text = inputEl.value;
+
+      if (!token) {
+        msgEl.textContent = "Bitte Token eingeben.";
+        msgEl.className = "error";
+        return;
+      }
+
+      try {
+        const resp = await fetch("http://127.0.0.1:8000/clean", {
+          method: "POST",
+          headers: {
+            "Authorization": "Bearer " + token,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ text })
         });
-    </script>
 
+        const data = await resp.json();
+
+        if (!resp.ok) {
+          msgEl.textContent = `${resp.status}: ${data.detail || "Fehler"}`;
+          msgEl.className = "error";
+          return;
+        }
+
+        outputEl.value = data.clean;
+        msgEl.textContent = "Bereinigung erfolgreich.";
+        msgEl.className = "ok";
+      } catch (e) {
+        msgEl.textContent = "Netzwerkfehler: " + e.message;
+        msgEl.className = "error";
+      }
+    });
+  </script>
 </body>
-
 </html>
