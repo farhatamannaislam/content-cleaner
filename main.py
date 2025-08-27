@@ -26,3 +26,18 @@ def remove_invisible(s: str) -> str:
     for ch in INVISIBLE:
         s = s.replace(ch, "")
     return s
+
+import re
+
+# -------- Step 2: Cleaning functions (part 2) --------
+
+DASH_PATTERN = re.compile(r"(?:--+|[–—―⸻]+)")   # all dash variants
+MULTISPACE = re.compile(r"\s+")
+
+def normalize_dashes(s: str) -> str:
+    """Normalize different dash types into a single -."""
+    return DASH_PATTERN.sub("-", s)
+
+def collapse_spaces(s: str) -> str:
+    """Replace multiple spaces with a single space."""
+    return MULTISPACE.sub(" ", s).strip()
