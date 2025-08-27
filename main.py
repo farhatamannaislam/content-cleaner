@@ -51,6 +51,7 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 
 class CleanRequest(BaseModel):
+    """Pydantic model for validating incoming /clean requests."""
     text: str
 
 
@@ -61,6 +62,14 @@ ALLOWED_ATTRS = {"a": ["href"]}
 
 
 def strip_html(raw: str) -> str:
+    """
+    Remove unwanted HTML tags/attributes.
+
+    - Unescapes HTML entities (e.g. &nbsp; → space).
+    - Converts <br> to spaces before stripping.
+    - Allows only <p> and <a href>.
+    - Removes empty <p> tags.
+    """
     # 1) Unescape HTML entities (&nbsp; -> \u00A0, etc.)
     raw = html.unescape(raw)
     # 2) Normalize NBSP to a normal space so it doesn't glue words
@@ -138,13 +147,19 @@ def clean_pipeline(raw: str) -> str:
 
 @app.post("/clean")
 @limiter.limit("60/minute")
-
-
 def clean_endpoint(
     request: Request,
     body: CleanRequest,
     _: bool = Depends(auth_check),
 ):
+    """
+    FastAPI POST endpoint `/clean`.
+
+    - Authenticates via Bearer token.
+    - Rate limited (60 requests/min per token/IP).
+    - Cleans input text using the pipeline.
+    - Returns JSON with the cleaned text or 400 on failure.
+    """
     try:
         return {"clean": clean_pipeline(body.text)}
     except Exception:
