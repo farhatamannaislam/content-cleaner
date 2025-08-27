@@ -2,12 +2,45 @@ from fastapi import FastAPI
 import re
 import html
 import bleach
+import os
+from pydantic import BaseModel
+from fastapi import Depends, HTTPException, Request
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from dotenv import load_dotenv
+
 
 app = FastAPI()
 
 @app.get("/healthz")
 def health():
     return {"ok": True}
+
+
+load_dotenv()
+API_TOKEN = os.getenv("API_TOKEN", "supersecrettoken")
+
+bearer = HTTPBearer(auto_error=False)
+
+def auth_check(credentials: HTTPAuthorizationCredentials = Depends(bearer)):
+    if not credentials or credentials.scheme.lower() != "bearer":
+        raise HTTPException(status_code=401, detail="Missing bearer token")
+    if credentials.credentials != API_TOKEN:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    return True
+
+def token_key(request: Request) -> str:
+    # rate-limit per token; fallback to IP
+    return request.headers.get("authorization") or request.client.host
+
+limiter = Limiter(key_func=token_key)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+class CleanRequest(BaseModel):
+    text: str
+
 
 # -------- Cleaning functions --------
 
@@ -89,3 +122,16 @@ def clean_pipeline(raw: str) -> str:
     text = strip_html(text)
     text = collapse_spaces(text)
     return text
+
+@app.post("/clean")
+@limiter.limit("60/minute")
+def clean_endpoint(
+    request: Request,              # 👈 add this
+    body: CleanRequest,
+    _: bool = Depends(auth_check),
+):
+    try:
+        return {"clean": clean_pipeline(body.text)}
+    except Exception:
+        raise HTTPException(status_code=400, detail="Cleaning failed")
+
