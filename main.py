@@ -33,6 +33,7 @@ bearer = HTTPBearer(auto_error=False)
 
 
 def auth_check(credentials: HTTPAuthorizationCredentials = Depends(bearer)):
+    """Authenticate requests by validating the Bearer token."""
     if not credentials or credentials.scheme.lower() != "bearer":
         raise HTTPException(status_code=401, detail="Missing bearer token")
     if credentials.credentials != API_TOKEN:
