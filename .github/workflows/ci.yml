@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+
+jobs:
+  lint-test-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Lint (ruff)
+        run: ruff check .
+
+      - name: Type check (mypy) — non-blocking
+        run: mypy . || true
+
+      - name: Run tests
+        env:
+          API_TOKEN: "test-token"
+        run: pytest -q
+
+      - name: Generate OpenAPI spec
+        run: python scripts/generate_openapi.py
+
+      - name: Upload OpenAPI and ReDoc as artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: openapi-docs
+          path: |
+            docs/openapi.json
+            docs/redoc.html
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image (no push)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          tags: content-cleaner:ci
