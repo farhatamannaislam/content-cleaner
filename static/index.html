@@ -2,76 +2,124 @@
 <html lang="de">
 <head>
   <meta charset="utf-8" />
-  <title>Content Cleaner</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Content Cleaner</title>
   <style>
+    :root { --bg:#fafafa; --card:#fff; --muted:#666; --ok:#0a7a28; --err:#b00020; --bd:#e5e5e5; }
+    * { box-sizing: border-box; }
     body {
-      max-width: 840px;
-      margin: 24px auto;
+      background: var(--bg);
+      margin: 0;
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
-      padding: 0 12px;
+      color: #111;
     }
-    h1 { margin-bottom: 16px; }
+    .wrap {
+      max-width: 960px;
+      margin: 32px auto;
+      padding: 0 16px;
+    }
+    h1 { margin: 0 0 16px; font-size: 32px; letter-spacing: .2px; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--bd);
+      border-radius: 14px;
+      padding: 16px;
+      box-shadow: 0 2px 10px rgba(0,0,0,.03);
+    }
     label { font-weight: 600; display: block; margin: 12px 0 6px; }
-    input, button { padding: 10px; }
-    textarea { width: 100%; min-height: 160px; }
+    input, button, textarea {
+      font: inherit;
+    }
+    input, textarea {
+      width: 100%;
+      border: 1px solid var(--bd);
+      border-radius: 10px;
+      padding: 10px 12px;
+      background: #fff;
+    }
+    textarea { min-height: 180px; line-height: 1.35; }
     .grid { display: grid; gap: 16px; grid-template-columns: 1fr; }
     @media (min-width: 900px) { .grid { grid-template-columns: 1fr 1fr; } }
-    .muted { color: #666; }
-    .error { color: #b00020; }
-    .ok { color: #0a7a28; }
+    .row { display:flex; gap:8px; align-items:center; flex-wrap: wrap; }
+    .btn {
+      border: 1px solid var(--bd);
+      background: #111; color:#fff;
+      padding: 10px 14px; border-radius: 10px; cursor: pointer;
+    }
+    .btn:disabled { opacity:.6; cursor:not-allowed; }
+    .btn-secondary { background:#fff; color:#111; }
+    .muted { color: var(--muted); }
+    .ok { color: var(--ok); }
+    .error { color: var(--err); }
+    .toolbar { display:flex; gap:8px; align-items:center; margin-top:10px; }
+    .status { min-height: 22px; margin-left: 4px; }
   </style>
 </head>
 <body>
-  <h1>Content Cleaner</h1>
+  <div class="wrap">
+    <h1>Content Cleaner</h1>
 
-  <label for="token">API Token</label>
-  <input id="token" placeholder="supersecrettoken" />
-
-  <div class="grid">
-    <div>
-      <label for="input">Roh-Text</label>
-      <textarea id="input" placeholder="Hier einfügen..."></textarea>
+    <div class="card" style="margin-bottom:16px;">
+      <label for="token">API Token</label>
+      <input id="token" placeholder="supersecrettoken" />
+      <div class="muted" style="margin-top:6px;">Der Token wird lokal im Browser gespeichert (nur für diese Seite).</div>
     </div>
-    <div>
-      <label for="output">Bereinigt</label>
-      <textarea id="output" readonly placeholder="Ergebnis erscheint hier..."></textarea>
-    </div>
-  </div>
 
-  <div style="margin-top:12px;">
-    <button id="btn">Bereinigen</button>
-    <span id="msg" class="muted" style="margin-left:8px;"></span>
+    <div class="card">
+      <div class="grid">
+        <div>
+          <label for="input">Roh-Text</label>
+          <textarea id="input" placeholder="Hier einfügen..."></textarea>
+          <div class="toolbar">
+            <button id="clear" class="btn btn-secondary" type="button">Leeren</button>
+          </div>
+        </div>
+        <div>
+          <label for="output">Bereinigt</label>
+          <textarea id="output" readonly placeholder="Ergebnis erscheint hier..."></textarea>
+          <div class="toolbar">
+            <button id="copy" class="btn btn-secondary" type="button">Kopieren</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:14px;">
+        <button id="btn" class="btn" type="button">Bereinigen</button>
+        <span id="status" class="status muted"></span>
+      </div>
+      <div class="muted" style="margin-top:6px;">Tipp: Cmd/Ctrl + Enter sendet den Text.</div>
+    </div>
   </div>
 
   <script>
     const tokenEl = document.getElementById("token");
     const inputEl = document.getElementById("input");
     const outputEl = document.getElementById("output");
-    const msgEl = document.getElementById("msg");
+    const statusEl = document.getElementById("status");
     const btn = document.getElementById("btn");
+    const clearBtn = document.getElementById("clear");
+    const copyBtn = document.getElementById("copy");
 
-    // Optional: remember token locally for convenience
+    // Remember token
     try {
       const saved = localStorage.getItem("cc_token");
       if (saved) tokenEl.value = saved;
-      tokenEl.addEventListener("input", () => {
-        localStorage.setItem("cc_token", tokenEl.value);
-      });
+      tokenEl.addEventListener("input", () => localStorage.setItem("cc_token", tokenEl.value));
     } catch (_) {}
 
-    btn.addEventListener("click", async () => {
-      msgEl.textContent = "";
-      msgEl.className = "muted";
-
+    async function doClean() {
       const token = tokenEl.value.trim();
       const text = inputEl.value;
 
+      statusEl.textContent = "";
+      statusEl.className = "status muted";
+
       if (!token) {
-        msgEl.textContent = "Bitte Token eingeben.";
-        msgEl.className = "error";
+        statusEl.textContent = "Bitte Token eingeben.";
+        statusEl.className = "status error";
         return;
       }
+      btn.disabled = true;
 
       try {
         const resp = await fetch("http://127.0.0.1:8000/clean", {
@@ -82,23 +130,43 @@
           },
           body: JSON.stringify({ text })
         });
-
         const data = await resp.json();
-
         if (!resp.ok) {
-          msgEl.textContent = `${resp.status}: ${data.detail || "Fehler"}`;
-          msgEl.className = "error";
+          statusEl.textContent = `${resp.status}: ${data.detail || "Fehler"}`;
+          statusEl.className = "status error";
           return;
         }
-
         outputEl.value = data.clean;
-        msgEl.textContent = "Bereinigung erfolgreich.";
-        msgEl.className = "ok";
+        statusEl.textContent = "Bereinigung erfolgreich.";
+        statusEl.className = "status ok";
       } catch (e) {
-        msgEl.textContent = "Netzwerkfehler: " + e.message;
-        msgEl.className = "error";
+        statusEl.textContent = "Netzwerkfehler: " + e.message;
+        statusEl.className = "status error";
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    btn.addEventListener("click", doClean);
+    clearBtn.addEventListener("click", () => { inputEl.value = ""; inputEl.focus(); });
+    copyBtn.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(outputEl.value || "");
+        statusEl.textContent = "In Zwischenablage kopiert.";
+        statusEl.className = "status ok";
+      } catch {
+        statusEl.textContent = "Kopieren fehlgeschlagen.";
+        statusEl.className = "status error";
+      }
+    });
+
+    // Cmd/Ctrl+Enter to submit
+    document.addEventListener("keydown", (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+        doClean();
       }
     });
   </script>
 </body>
 </html>
+
