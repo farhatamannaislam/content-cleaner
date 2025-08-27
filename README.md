@@ -94,3 +94,23 @@ Datei: `static/index.html`
 ### Hinweis
 - In Dev-Umgebungen ggf. CORS im Backend aktivieren, falls Aufruf von anderer Portnummer.
 - Die GUI ist optional – alle Funktionen stehen auch per REST-API zur Verfügung.
+
+---
+
+## Typische Fragen & Antworten (FAQ)
+
+**Unicode-Handling**  
+*Sollen auch Control-Chars < U+001F entfernt werden?*  
+Ja – sämtliche Steuerzeichen unterhalb von U+001F werden konsequent verworfen, um saubere, ausschließlich druckbare Ausgaben sicherzustellen.  
+
+**HTML-Stripping**  
+*Was tun mit erlaubten Tags wie `<p>` oder `<a>` – whitelisten oder alles strippen?*  
+Es wird ein striktes Whitelisting angewandt: nur `<p>` und `<a href>` bleiben erhalten. Alles andere (z. B. `<div>`, leere `<p>`, `<span style>`) wird entfernt.  
+
+**Kopiertests mit Word-HTML**  
+*Wie verhält sich der Cleaner mit „Müll“-Markup aus Microsoft Word?*  
+Divs, Inline-Styles und andere Word-spezifische Tags werden entfernt, sodass nur sauberer Text und die definierte Whitelist übrigbleiben.  
+
+**Gedankenstriche**  
+*Durch einfachen Bindestrich ersetzen oder komplett löschen?*  
+Alle Varianten von Gedankenstrichen (–, —, ―, ⸻, usw.) werden einheitlich auf den normalen Bindestrich `-` reduziert.
