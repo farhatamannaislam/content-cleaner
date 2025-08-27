@@ -114,3 +114,22 @@ Divs, Inline-Styles und andere Word-spezifische Tags werden entfernt, sodass nur
 **Gedankenstriche**  
 *Durch einfachen Bindestrich ersetzen oder komplett löschen?*  
 Alle Varianten von Gedankenstrichen (–, —, ―, ⸻, usw.) werden einheitlich auf den normalen Bindestrich `-` reduziert.
+
+---
+
+## Code-Qualität & Validierung
+
+Zur Sicherstellung einer sauberen Codebasis wurden Linter und Validatoren verwendet:
+
+### Python Linter
+- Überprüfung mit dem **CI Python Linter** (PEP8-Konformität)  
+- Ergebnis: ✅ Keine Fehler mehr (z. B. E231/E304 behoben)
+
+### HTML-Validierung
+- `static/index.html` wurde mit dem [W3C HTML Validator](https://validator.w3.org/) überprüft  
+- Ergebnis: ✅ Keine Fehler oder Warnungen
+
+---
+
+Damit ist sowohl der Python-Backend-Code als auch das optionale HTML-Frontend **validiert und standardkonform**.
+
