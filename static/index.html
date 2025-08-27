@@ -1,28 +1,82 @@
 <!DOCTYPE html>
 <html lang="de">
+
 <head>
-  <meta charset="utf-8" />
-  <title>Content Cleaner</title>
-  <style>
-    body { max-width: 800px; margin: 2rem auto; font-family: sans-serif; }
-    textarea { width: 100%; min-height: 140px; margin-bottom: 1rem; }
-    input, button { padding: 0.5rem; margin: 0.25rem 0; }
-  </style>
+    <meta charset="utf-8" />
+    <title>Content Cleaner</title>
+    <style>
+        body {
+            max-width: 800px;
+            margin: 2rem auto;
+            font-family: sans-serif;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 140px;
+            margin-bottom: 1rem;
+        }
+
+        input,
+        button {
+            padding: 0.5rem;
+            margin: 0.25rem 0;
+        }
+    </style>
 </head>
+
 <body>
-  <h1>Content Cleaner</h1>
+    <h1>Content Cleaner</h1>
 
-  <label for="token">API Token:</label><br>
-  <input id="token" placeholder="supersecrettoken"><br><br>
+    <label for="token">API Token:</label><br>
+    <input id="token" placeholder="supersecrettoken"><br><br>
 
-  <label for="input">Roh-Text</label><br>
-  <textarea id="input" placeholder="Hier einfügen..."></textarea><br>
+    <label for="input">Roh-Text</label><br>
+    <textarea id="input" placeholder="Hier einfügen..."></textarea><br>
 
-  <label for="output">Bereinigt</label><br>
-  <textarea id="output" readonly></textarea><br>
+    <label for="output">Bereinigt</label><br>
+    <textarea id="output" readonly></textarea><br>
 
-  <button id="btn">Bereinigen</button>
+    <button id="btn">Bereinigen</button>
 
-  <div id="msg"></div>
+    <div id="msg"></div>
+    <script>
+        document.getElementById("btn").addEventListener("click", async () => {
+            const token = document.getElementById("token").value.trim();
+            const text = document.getElementById("input").value;
+            const msg = document.getElementById("msg");
+
+            if (!token) {
+                msg.textContent = "Bitte Token eingeben.";
+                msg.style.color = "red";
+                return;
+            }
+
+            try {
+                const resp = await fetch("http://127.0.0.1:8000/clean", {
+                    method: "POST",
+                    headers: {
+                        "Authorization": "Bearer " + token,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ text })
+                });
+                const data = await resp.json();
+                if (!resp.ok) {
+                    msg.textContent = `${resp.status}: ${data.detail || "Fehler"}`;
+                    msg.style.color = "red";
+                    return;
+                }
+                document.getElementById("output").value = data.clean;
+                msg.textContent = "Bereinigung erfolgreich.";
+                msg.style.color = "green";
+            } catch (e) {
+                msg.textContent = "Netzwerkfehler: " + e.message;
+                msg.style.color = "red";
+            }
+        });
+    </script>
+
 </body>
+
 </html>

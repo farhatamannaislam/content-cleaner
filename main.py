@@ -17,6 +17,12 @@ app = FastAPI()
 def health():
     return {"ok": True}
 
+from fastapi.middleware.cors import CORSMiddleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], allow_methods=["*"], allow_headers=["*"],
+)
+
 
 load_dotenv()
 API_TOKEN = os.getenv("API_TOKEN", "supersecrettoken")
