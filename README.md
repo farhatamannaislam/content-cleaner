@@ -148,7 +148,7 @@ API_TOKEN=devtoken123
 ```
 
 ### Option A — Docker (single container)
-```
+```bash
 # build image
 docker build -t content-cleaner:latest .
 
@@ -161,14 +161,14 @@ Swagger → Authorize → enter only your token `(e.g. devtoken123)`.
 
 ### Option B — Docker Compose (one command)
 
-```
+```bash
 docker compose up --build
 # stop later:
 # docker compose down
 ```
 #### Health & sample request
 
-```
+```bash
 curl -s http://localhost:8000/healthz
 curl -s -X POST http://localhost:8000/clean \
   -H "Authorization: Bearer devtoken123" \
@@ -178,7 +178,7 @@ curl -s -X POST http://localhost:8000/clean \
 
 #### OpenAPI docs (static export)
 
-```
+```bash
 # generate spec
 python3 -m scripts.generate_openapi
 # serve static docs (ReDoc)
@@ -188,7 +188,7 @@ python3 -m http.server 5500 --directory docs
 ```
 
 #### Optional: GUI (Vanilla TS)
-```
+```bash
 # build the small TS frontend
 npx tsc
 # then open static/index.html and use your token
@@ -201,9 +201,122 @@ npx tsc
 - `.env not found` → create `.env` (copy from `.env.example`).
 - **ReDoc red screen when opening file directly** → serve via `http.server` as shown above.
 
+---
 
+## Manueller Testplan
 
+### 1) Service starten (Docker Compose)
 
+```bash
+docker compose up --build
+# App läuft auf http://localhost:8000
+```
+
+### 2) Health-Check
+
+```bash
+curl -s http://localhost:8000/healthz
+# => {"ok": true}
+```
+
+### 3) Swagger UI (Login + Anfrage + ohne Auth)
+
+- Öffne http://localhost:8000/docs
+- Klicke Authorize (oben rechts) → gib nur deinen Token ein (z. B. devtoken123) → Authorize → Close
+- Öffne POST /clean → Try it out → benutze:
+
+```json
+{
+  "text": "Hello<br><br>World"
+}
+```
+**Execute** → Antwort: `{"clean":"Hello World"}``
+
+- Klicke **Authorize** erneut → *Logout* → **Close**
+Teste **POST /clean** nochmal → sollte **401** zurückgeben mit `{"detail":"Missing bearer token"}``
+
+### 4) cURL Happy Path (mit Token)
+
+```bash
+curl -s -X POST "http://localhost:8000/clean" \
+  -H "Authorization: Bearer devtoken123" \
+  -H "Content-Type: application/json" \
+  -d '{"text":"Hi\u200b — world<br><br>"}'
+# => {"clean":"Hi - world"}
+```
+
+### 5) cURL Fehlerfälle (Auth)
+_ Ohne Token:
+
+```bash
+curl -s -X POST "http://localhost:8000/clean" \
+  -H "Content-Type: application/json" \
+  -d '{"text":"Hello"}'
+# => 401 {"detail":"Missing bearer token"}
+```
+
+- Falscher Token:
+
+```bash
+curl -s -X POST "http://localhost:8000/clean" \
+  -H "Authorization: Bearer wrongtoken" \
+  -H "Content-Type: application/json" \
+  -d '{"text":"Hello"}'
+# => 401 {"detail":"Invalid token"}
+```
+
+### 6) Idempotenz-Test (zweimaliges Reinigen ändert nichts mehr)
+
+```bash
+# Erstes Reinigen
+C1=$(curl -s -X POST "http://localhost:8000/clean" \
+  -H "Authorization: Bearer devtoken123" \
+  -H "Content-Type: application/json" \
+  -d '{"text":"Hello<br><br>World"}' | jq -r .clean)
+
+# Zweites Reinigen mit bereits bereinigtem Ergebnis
+C2=$(curl -s -X POST "http://localhost:8000/clean" \
+  -H "Authorization: Bearer devtoken123" \
+  -H "Content-Type: application/json" \
+  -d "{\"text\":\"$C1\"}" | jq -r .clean)
+
+echo "C1=$C1"
+echo "C2=$C2"
+# Erwartung: C1 == C2
+```
+
+### 7) GUI (Vanilla TypeScript)
+
+```bash
+# Frontend bauen (nach static/dist/)
+npx tsc
+```
+- `static/index.html` im Browser öffnen
+
+- Token (z. B. `devtoken123`) eingeben
+
+- Text mit `<br>` o. Ä. links einfügen → **Bereinigen** klicken
+
+- Erwartung: Bereinigter Text rechts + grüner Status „Bereinigung erfolgreich“
+
+### 8) Statische OpenAPI-Doku (ReDoc)
+
+```bash
+# Spezifikation erzeugen
+python3 -m scripts.generate_openapi
+# Statische Doku bereitstellen
+python3 -m http.server 5500 --directory docs
+# Im Browser öffnen: http://localhost:5500/redoc.html
+```
+
+### 9) Service stoppen
+
+```bash
+# Im Compose-Terminal mit Ctrl+C
+docker compose down
+````
+
+**Hinweis**: In Swagger **Authorize** bitte nur den reinen Token-Wert eingeben (z. B. `devtoken123`). Swagger setzt automatisch `Bearer` davor.
 
 
 
