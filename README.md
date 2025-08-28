@@ -133,3 +133,79 @@ Zur Sicherstellung einer sauberen Codebasis wurden Linter und Validatoren verwen
 
 Damit ist sowohl der Python-Backend-Code als auch das optionale HTML-Frontend **validiert und standardkonform**.
 
+
+---
+
+## Docker & Compose
+
+### Prereqs
+
+- Docker Desktop (Mac/Win) or Docker Engine (Linux)
+- A `.env` file at repo root `(see .env.example)``
+
+```
+API_TOKEN=devtoken123
+```
+
+### Option A — Docker (single container)
+```
+# build image
+docker build -t content-cleaner:latest .
+
+# run container (reads .env)
+docker run -p 8000:8000 --env-file .env content-cleaner:latest
+```
+
+Open: http://localhost:8000/docs
+Swagger → Authorize → enter only your token `(e.g. devtoken123)`.
+
+### Option B — Docker Compose (one command)
+
+```
+docker compose up --build
+# stop later:
+# docker compose down
+```
+#### Health & sample request
+
+```
+curl -s http://localhost:8000/healthz
+curl -s -X POST http://localhost:8000/clean \
+  -H "Authorization: Bearer devtoken123" \
+  -H "Content-Type: application/json" \
+  -d '{"text":"Hi\u200b — world<br><br>"}'
+```
+
+#### OpenAPI docs (static export)
+
+```
+# generate spec
+python3 -m scripts.generate_openapi
+# serve static docs (ReDoc)
+python3 -m http.server 5500 --directory docs
+# view:
+# http://localhost:5500/redoc.html
+```
+
+#### Optional: GUI (Vanilla TS)
+```
+# build the small TS frontend
+npx tsc
+# then open static/index.html and use your token
+```
+
+#### Troubleshooting
+
+- Compose warns `version is obsolete` → remove the `version:` line from `docker-compose.yml.``
+- **401 in Swagger** → in **Authorize**, enter **only the token**, Swagger adds Bearer automatically.
+- `.env not found` → create `.env` (copy from `.env.example`).
+- **ReDoc red screen when opening file directly** → serve via `http.server` as shown above.
+
+
+
+
+
+
+
+
+
